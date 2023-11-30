@@ -17,5 +17,5 @@ demo = gr.Interface(
   inputs=[gr.Image(), gr.Image()],
   outputs=["image"],
 )
-demo.launch(root_path="/faceswap")
+demo.queue().launch(root_path="/faceswap")
 #swap(Image.open("./data/s.jpg"), Image.open("./data/t.jpg")).save("./data/result.png")
