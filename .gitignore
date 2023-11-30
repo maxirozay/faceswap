@@ -5,3 +5,4 @@ CodeFormer
 checkpoints
 venv
 data
+__pycache__
