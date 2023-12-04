@@ -3,6 +3,7 @@ sys.path.append('./CodeFormer/CodeFormer')
 
 import os
 import cv2
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torchvision.transforms.functional import normalize
@@ -27,9 +28,12 @@ def check_ckpts():
     load_file_from_url(url=pretrain_model_url['parsing'], model_dir='CodeFormer/CodeFormer/weights/facelib', progress=True, file_name=None)
 
 
-def face_restoration(img, codeformer_fidelity):
+def face_restoration(img, target_img, codeformer_fidelity):
   """Run a single prediction on the model"""
   try: # global try
+    img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    target_img = cv2.cvtColor(np.array(target_img), cv2.COLOR_RGB2BGR)
+
     # take the default setting for the demo
     only_center_face = True
     detection_model = "retinaface_resnet50"
@@ -37,7 +41,6 @@ def face_restoration(img, codeformer_fidelity):
 
     face_helper = FaceRestoreHelper(
         upscale,
-        face_size=512,
         crop_ratio=(1, 1),
         det_model=detection_model,
         save_ext="png",
@@ -48,7 +51,6 @@ def face_restoration(img, codeformer_fidelity):
     # get face landmarks for each face
     num_det_faces = face_helper.get_face_landmarks_5(
         only_center_face=only_center_face,
-        resize=512,
         eye_dist_threshold=5
     )
     # align and warp each face
@@ -82,6 +84,7 @@ def face_restoration(img, codeformer_fidelity):
 
     # paste_back
     face_helper.get_inverse_affine(None)
+    face_helper.read_image(target_img)
     restored_img = face_helper.paste_faces_to_input_image(
       upsample_img=None, draw_box=False
     )
