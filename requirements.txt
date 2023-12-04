@@ -18,4 +18,4 @@ yapf
 lpips
 insightface>=0.7.3
 onnxruntime
-gradio
+gradio==3.41
