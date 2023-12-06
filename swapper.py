@@ -25,12 +25,13 @@ def getFaceAnalyser(model_path: str, providers,
     return face_analyser
 
 def get_many_faces(face_analyser,
-                   frame:np.ndarray):
+                   frame:np.ndarray,
+                   num_faces):
     """
     get faces from left to right by order
     """
     try:
-        face = face_analyser.get(frame)
+        face = face_analyser.get(frame, num_faces)
         return sorted(face, key=lambda x: x.bbox[0])
     except IndexError:
         return None
@@ -56,14 +57,14 @@ def process(source_img: Union[Image.Image, List],
     target_img = cv2.cvtColor(np.array(target_img), cv2.COLOR_RGB2BGR)
 
     # detect faces that will be replaced in the target image
-    target_faces = get_many_faces(face_analyser, target_img)
-    num_target_faces = len(target_faces)
+    num_faces = len(source_img)
+    target_faces = get_many_faces(face_analyser, target_img, num_faces)
 
     if target_faces is not None:
         temp_frame = copy.deepcopy(target_img)
         print("Replacing faces in target image from the left to the right by order")
-        for i in range(num_target_faces):
-            source_faces = get_many_faces(face_analyser, cv2.cvtColor(np.array(source_img[i]), cv2.COLOR_RGB2BGR))
+        for i in range(num_faces):
+            source_faces = get_many_faces(face_analyser, cv2.cvtColor(np.array(source_img[i]), cv2.COLOR_RGB2BGR), 1)
             source_index = i
             target_index = i
 
