@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torchvision.transforms.functional import normalize
+from PIL import Image
 
 from basicsr.utils import imwrite, img2tensor, tensor2img
 from basicsr.utils.download_util import load_file_from_url
@@ -28,30 +29,22 @@ def check_ckpts():
     load_file_from_url(url=pretrain_model_url['parsing'], model_dir='CodeFormer/CodeFormer/weights/facelib', progress=True, file_name=None)
 
 
-def face_restoration(img, target_img, codeformer_fidelity):
+def face_restoration(img, codeformer_fidelity):
   """Run a single prediction on the model"""
   try: # global try
     img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-    target_img = cv2.cvtColor(np.array(target_img), cv2.COLOR_RGB2BGR)
 
-    # take the default setting for the demo
-    only_center_face = True
-    detection_model = "retinaface_resnet50"
-    upscale = 1
-
-    face_helper = FaceRestoreHelper(
-        upscale,
-        crop_ratio=(1, 1),
-        det_model=detection_model,
-        save_ext="png",
-        use_parse=True,
-    )
-
+    face_helper.all_landmarks_5 = []
+    face_helper.det_faces = []
+    face_helper.affine_matrices = []
+    face_helper.inverse_affine_matrices = []
+    face_helper.cropped_faces = []
+    face_helper.restored_faces = []
+    face_helper.pad_input_imgs = []
     face_helper.read_image(img)
     # get face landmarks for each face
     num_det_faces = face_helper.get_face_landmarks_5(
-        only_center_face=only_center_face,
-        eye_dist_threshold=5
+      blur_ratio=0
     )
     # align and warp each face
     face_helper.align_warp_face()
@@ -84,13 +77,12 @@ def face_restoration(img, target_img, codeformer_fidelity):
 
     # paste_back
     face_helper.get_inverse_affine(None)
-    face_helper.read_image(target_img)
     restored_img = face_helper.paste_faces_to_input_image(
       upsample_img=None, draw_box=False
     )
 
     restored_img = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
-    return restored_img
+    return Image.fromarray(restored_img)
   except Exception as error:
     print('Global exception', error)
     return None, None
@@ -111,3 +103,15 @@ ckpt_path = "CodeFormer/CodeFormer/weights/CodeFormer/codeformer.pth"
 checkpoint = torch.load(ckpt_path)["params_ema"]
 codeformer_net.load_state_dict(checkpoint)
 codeformer_net.eval()
+
+# take the default setting for the demo
+detection_model = "retinaface_resnet50"
+upscale = 1
+
+face_helper = FaceRestoreHelper(
+    upscale,
+    crop_ratio=(1, 1),
+    det_model=detection_model,
+    save_ext="png",
+    use_parse=False,
+)
